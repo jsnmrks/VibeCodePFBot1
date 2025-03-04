@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Tracking Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .token-sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .token-count {
+            font-size: 14px;
+            color: #7f8c8d;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .token-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .token-table th,
+        .token-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .token-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .token-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .token-address {
+            font-family: monospace;
+            color: #3498db;
+            cursor: pointer;
+        }
+
+        .token-address:hover {
+            text-decoration: underline;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2ecc71;
+            transition: width 0.3s ease;
+        }
+
+        .status-monitoring {
+            color: #f39c12;
+        }
+
+        .status-qualified {
+            color: #2ecc71;
+        }
+
+        .timestamp {
+            color: #95a5a6;
+            font-size: 12px;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+
+        .signal-strength-high {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .signal-strength-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .signal-strength-low {
+            color: #95a5a6;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-green {
+            color: #2ecc71;
+        }
+
+        .text-red {
+            color: #e74c3c;
+        }
+
+        .triggers {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+        }
+
+        #momentumTokensTable th {
+            white-space: nowrap;
+            padding: 12px 8px;
+        }
+
+        #momentumTokensTable td {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number" id="tokensTracking">0</div>
+                <div class="stat-label">Tokens Tracking</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="tokensQualified">0</div>
+                <div class="stat-label">Tokens Qualified</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="tokensDisqualified">0</div>
+                <div class="stat-label">Tokens Disqualified</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                Momentum Signals
+                <span class="token-count" id="momentumTokenCount">0 tokens</span>
+            </h2>
+            <table class="token-table" id="momentumTokensTable">
+                <thead>
+                    <tr>
+                        <th>Token Address</th>
+                        <th>Signal Strength</th>
+                        <th>Buy Volume</th>
+                        <th>Buy/Sell Ratio</th>
+                        <th>Velocity</th>
+                        <th>Price Impact</th>
+                        <th>Buyers</th>
+                        <th>Triggers</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="token-sections">
+            <div class="section">
+                <h2 class="section-title">
+                    Monitored Tokens
+                    <span class="token-count" id="monitoredTokenCount">0 tokens</span>
+                </h2>
+                <input type="text" class="search-bar" id="monitoredSearch" placeholder="Search by token address...">
+                <table class="token-table" id="monitoredTokensTable">
+                    <thead>
+                        <tr>
+                            <th>Token Address</th>
+                            <th>Status</th>
+                            <th>Buy Transactions</th>
+                            <th>Sell Transactions</th>
+                            <th>Curve Progress</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    Disqualification Summary
+                    <span class="token-count" id="disqualifiedTotal">0 tokens</span>
+                </h2>
+                <table class="token-table">
+                    <thead>
+                        <tr>
+                            <th>Reason</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="disqualificationSummary"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentStats = {};
+        
+        // Setup search functionality
+        const setupSearch = (inputId, tableId, dataKey) => {
+            const input = document.getElementById(inputId);
+            input.addEventListener('input', () => {
+                const searchTerm = input.value.toLowerCase();
+                updateMonitoredTokensTable(searchTerm);
+            });
+        };
+
+        // Initialize search for monitored tokens
+        setupSearch('monitoredSearch', 'monitoredTokensTable', 'monitoredTokens');
+
+        socket.on('statsUpdate', (stats) => {
+            console.log('Received stats update:', stats);
+            currentStats = stats;
+            updateOverviewStats(stats);
+            updateMonitoredTokensTable();
+            updateDisqualificationSummary(stats);
+            updateMomentumTable(stats);
+        });
+
+        function updateOverviewStats(stats) {
+            document.getElementById('tokensTracking').textContent = stats.tokensTracking;
+            document.getElementById('tokensQualified').textContent = stats.tokensQualified;
+            document.getElementById('tokensDisqualified').textContent = stats.tokensDisqualified;
+            
+            const monitoredTokens = Array.from(stats.monitoredTokens.values());
+            document.getElementById('monitoredTokenCount').textContent = 
+                `${monitoredTokens.length} tokens`;
+            document.getElementById('disqualifiedTotal').textContent = 
+                `${stats.tokensDisqualified} tokens`;
+        }
+
+        function updateMonitoredTokensTable(searchTerm = '') {
+            const tbody = document.querySelector('#monitoredTokensTable tbody');
+            const tokens = Array.from(currentStats.monitoredTokens.values());
+            
+            // Filter tokens based on search term
+            const filteredTokens = tokens.filter(token => {
+                return searchTerm === '' || token.address.toLowerCase().includes(searchTerm);
+            });
+
+            // Sort tokens by curve progress
+            filteredTokens.sort((a, b) => b.curveProgress - a.curveProgress);
+
+            tbody.innerHTML = '';
+            
+            if (filteredTokens.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data">No tokens found</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredTokens.forEach(token => {
+                const row = `
+                    <tr>
+                        <td class="token-address">${token.address}</td>
+                        <td class="status-${token.status.toLowerCase()}">${token.status}</td>
+                        <td>${token.buyTransactions}</td>
+                        <td>${token.sellTransactions}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${token.curveProgress}%"></div>
+                            </div>
+                            ${token.curveProgress.toFixed(1)}%
+                        </td>
+                        <td class="timestamp">${new Date(token.createdAt).toLocaleString()}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // Add click handlers for token addresses
+            tbody.querySelectorAll('.token-address').forEach(element => {
+                element.addEventListener('click', () => {
+                    copyToClipboard(element.textContent, element);
+                });
+            });
+        }
+
+        function getSignalStrengthClass(strength) {
+            if (strength >= 75) return 'high';
+            if (strength >= 50) return 'medium';
+            return 'low';
+        }
+
+        function formatTriggers(triggers) {
+            if (!triggers || triggers.length === 0) return 'None';
+            return triggers.join(', ');
+        }
+
+        function updateDisqualificationSummary(stats) {
+            const summaryTable = document.getElementById('disqualificationSummary');
+            summaryTable.innerHTML = '';
+            
+            Object.entries(stats.disqualificationReasons).forEach(([reason, count]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${reason}</td>
+                    <td>${count}</td>
+                `;
+                summaryTable.appendChild(row);
+            });
+        }
+        
+        function updateMomentumTable(stats) {
+            const tbody = document.querySelector('#momentumTokensTable tbody');
+            const momentumTokens = stats.momentumTokens || [];
+            
+            document.getElementById('momentumTokenCount').textContent = 
+                `${momentumTokens.length} tokens`;
+            
+            tbody.innerHTML = '';
+            
+            if (momentumTokens.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-data">No momentum signals detected</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            momentumTokens.forEach(token => {
+                const row = `
+                    <tr>
+                        <td class="token-address">${token.address}</td>
+                        <td class="text-center signal-strength-${getSignalStrengthClass(token.signalStrength)}">
+                            ${token.signalStrength}
+                        </td>
+                        <td class="text-center">${token.metrics.buyVolume.toFixed(2)} SOL</td>
+                        <td class="text-center">${token.metrics.buySellRatio.toFixed(2)}x</td>
+                        <td class="text-center">${token.metrics.velocityTrend.toFixed(2)}/s</td>
+                        <td class="text-center ${token.metrics.priceImpact >= 0 ? 'text-green' : 'text-red'}">
+                            ${token.metrics.priceImpact.toFixed(2)}%
+                        </td>
+                        <td class="text-center">${token.metrics.uniqueBuyers}</td>
+                        <td class="text-center triggers" title="${formatTriggers(token.triggers)}">
+                            ${formatTriggers(token.triggers)}
+                        </td>
+                        <td class="text-center timestamp">${new Date(token.timestamp).toLocaleString()}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // Add click handlers for token addresses
+            tbody.querySelectorAll('.token-address').forEach(element => {
+                element.addEventListener('click', () => {
+                    copyToClipboard(element.textContent, element);
+                });
+            });
+        }
+
+        function copyToClipboard(text, element) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                element.textContent = 'Copied!';
+                element.style.color = '#27ae60';
+                
+                setTimeout(() => {
+                    element.textContent = text;
+                    element.style.color = '#3498db';
+                }, 1000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                element.textContent = 'Failed to copy';
+                element.style.color = '#e74c3c';
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // Socket connection status
+        socket.on('connect', () => {
+            console.log('Connected to dashboard server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from dashboard server');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+        });
+    </script>
+</body>
+</html>
